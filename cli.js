@@ -1,3 +1,7 @@
+#!/usr/bin/env node
+
+process.title = 'pbcw';
+
 var bunyan = require('bunyan');
 var PrettyStream = require('bunyan-prettystream');
 
