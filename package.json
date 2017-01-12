@@ -1,5 +1,6 @@
 {
   "name": "pbcw",
+  "version": "1.0.0",
   "description": "Streaming pretty bunyan cloudwatch logs for dev",
   "bin": {
     "pbcw": "./cli.js"
