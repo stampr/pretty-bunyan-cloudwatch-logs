@@ -1,0 +1,15 @@
+{
+  "name": "pbcw",
+  "description": "Streaming pretty bunyan cloudwatch logs for dev",
+  "bin": {
+    "pbcw": "./cli.js"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.7.13",
+    "bluebird": "^3.4.7",
+    "bunyan": "^1.8.5",
+    "bunyan-prettystream": "^0.1.3",
+    "ini": "^1.3.4",
+    "node-getopt": "^0.2.3"
+  }
+}
