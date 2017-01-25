@@ -8,6 +8,15 @@ var PrettyStream = require('bunyan-prettystream');
 var prettyStdOut = new PrettyStream();
 prettyStdOut.pipe(process.stdout);
 
+process.on('uncaughtException', (err) => {
+  console.log('uncaught exception', err.stack || err);
+});
+
+process.on('unhandledRejection', (reason, p) => {
+  console.log('Unhandled Rejection at: Promise', p, 'reason:', reason);
+  // application specific logging, throwing an error, or other logic here
+});
+
 var log = bunyan.createLogger({
   name: 'cloudwatch',
   streams: [
@@ -91,7 +100,7 @@ function list(logs, nextToken) {
       // Load next set of results
       return list(logs, result.nextToken);
     }
-  });
+  }, console.error);
 }
 
 function getStreamEvents(logs, logGroup, logStream) {
@@ -101,7 +110,7 @@ function getStreamEvents(logs, logGroup, logStream) {
   })
   .then(function (result) {
     return (result && result.events) || [];
-  });
+  }, console.error);
 }
 
 /**
@@ -199,7 +208,7 @@ function tail(logs, logGroup, numRecords, showTimes, showStreams, seenStreamTime
         seenStreamTimestamps[key] = newTimestamps[key];
       }
     });
-  });
+  }, console.error);
 }
 
 function main(argv) {
@@ -220,17 +229,18 @@ function main(argv) {
     var arg = opt.bindHelp().parse(argv);
     if (arg.options.version) {
       console.log('cwtail ' + JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'))).version);
-      return Promise.reject(0);
+      process.exit(0);
     }
     if (arg.options.profile) {
       process.env.AWS_PROFILE = arg.options.profile;
     }
     var AWS = require('aws-sdk');
+    var region = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || section.region;
     try {
       var iniFile = fs.readFileSync(path.join(process.env.HOME || process.env.HOMEPATH, '.aws', 'config'), 'utf8');
       var iniData = ini.decode(iniFile);
       var section = iniData[process.env.AWS_PROFILE ? 'profile ' + process.env.AWS_PROFILE : 'default'];
-      AWS.config.update({ region: process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || section.region });
+      AWS.config.update({ region: region });
     } catch (err) {
       // Ini file not found, ignore
       console.error(err);
@@ -241,12 +251,12 @@ function main(argv) {
           httpOptions: { agent: proxy(process.env.https_proxy) }
       })
     }
-    var logs = new AWS.CloudWatchLogs();
+    var logs = new AWS.CloudWatchLogs({ region });
     Promise.promisifyAll(logs);
     if (!arg.options.list && !arg.argv.length) {
       // Need log group name
       opt.showHelp();
-      return Promise.reject(1);
+      return Promise.reject(new Error('log group name required'));
     }
     if (arg.options.list) {
       return list(logs);
@@ -272,14 +282,8 @@ function main(argv) {
     process.exit(0);
   })
   .then(null, function (err) {
-    if (err == 0) {
-      process.exit(0);
-    } else if (err == 1) {
-      process.exit(1);
-    } else {
-      console.error(err.stack || err);
-      process.exit(1);
-    }
+    console.log(err.stack || err);
+    process.exit(1);
   });
 }
 
