@@ -4,6 +4,7 @@ process.title = 'pbcw';
 
 var bunyan = require('bunyan');
 var PrettyStream = require('bunyan-prettystream');
+var promisifyAll = require('./promisify-all.js');
 
 var prettyStdOut = new PrettyStream();
 prettyStdOut.pipe(process.stdout);
@@ -77,7 +78,6 @@ var fs = require('fs');
 var path = require('path');
 var ini = require('ini');
 var Getopt = require('node-getopt');
-var Promise = require('bluebird');
 
 var DEFAULT_NUM_RECORDS = 30; // Default number of records to tail
 var FOLLOW_INTERVAL = 5000; // How often to read more
@@ -252,7 +252,7 @@ function main(argv) {
       })
     }
     var logs = new AWS.CloudWatchLogs({ region });
-    Promise.promisifyAll(logs);
+    promisifyAll(logs);
     if (!arg.options.list && !arg.argv.length) {
       // Need log group name
       opt.showHelp();
